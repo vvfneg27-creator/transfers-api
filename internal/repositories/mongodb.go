@@ -4,15 +4,16 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
 	"transfers-api/internal/config"
 	"transfers-api/internal/enums"
 	"transfers-api/internal/known_errors"
 	"transfers-api/internal/logging"
 	"transfers-api/internal/models"
+
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type TransfersMongoDBRepo struct {
@@ -140,4 +141,36 @@ func (r *TransfersMongoDBRepo) Delete(ctx context.Context, id string) error {
 		return fmt.Errorf("transfer not found: %w", known_errors.ErrNotFound)
 	}
 	return nil
+}
+
+func (r *TransfersMongoDBRepo) ListByUserID(ctx context.Context, id string) ([]models.Transfer, error) {
+	// objID, err := primitive.ObjectIDFromHex(id)
+	// if err != nil {
+	// 	return []models.Transfer{}, fmt.Errorf("error parsing user ID %s: %s: %w", id, err.Error(), known_errors.ErrBadRequest)
+	// }
+
+	cursor, err := r.collection.Find(ctx, bson.M{"sender_id": id})
+	if err != nil {
+		return []models.Transfer{}, fmt.Errorf("error getting user transfers: %w", err)
+	}
+	defer cursor.Close(ctx)
+	var transfersDAO []transferMongoDAO
+	if err := cursor.All(ctx, &transfersDAO); err != nil {
+		return []models.Transfer{}, fmt.Errorf("error decoding transfers: %w", err)
+	}
+
+	transfers := make([]models.Transfer, 0, len(transfersDAO))
+
+	for _, t := range transfersDAO {
+		transfers = append(transfers, models.Transfer{
+			ID:         t.ID.Hex(),
+			SenderID:   t.SenderID,
+			ReceiverID: t.ReceiverID,
+			Currency:   enums.ParseCurrency(t.Currency),
+			Amount:     t.Amount,
+			State:      t.State, // TODO: enums.ParseState
+		})
+	}
+
+	return transfers, nil
 }

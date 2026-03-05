@@ -199,6 +199,27 @@
           "body": "{\n    \"id\": \"699cd931efb8145086e1c691\"\n}"
         }
       ]
+    },
+    {
+      "name": "List transfers for UserID",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:8080/transfers/user/7b52a8b8-d518-4be0-be42-de0931acad51",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "8080",
+          "path": [
+            "transfers",
+            "user",
+            "7b52a8b8-d518-4be0-be42-de0931acad51"
+          ]
+        }
+      },
+      "response": []
     }
   ]
 }
