@@ -2,14 +2,19 @@ package config
 
 import (
 	"encoding/json"
-	"github.com/caarlos0/env/v10"
 	"time"
 	"transfers-api/internal/logging"
+
+	"github.com/caarlos0/env/v10"
 )
 
 type Config struct {
-	Business      BusinessConfig `json:"business"`
-	MongoDBConfig MongoDB        `json:"mongodb"`
+	Business        BusinessConfig `json:"business"`
+	MongoDBConfig   MongoDB        `json:"mongodb"`
+	MySQLDBConfig   MySqlDB        `json:"mysql"`
+	MemcachedConfig Memcached      `json:"memcached"`
+	//ccachedConfig ccached      `json:"ccached"`
+	RabbitMQConfig RabbitMQ `json:"rabbitmq"`
 }
 
 type BusinessConfig struct {
@@ -26,11 +31,36 @@ type MongoDB struct {
 	Collection     string        `env:"MONGODB_COLLECTION" envDefault:"transfers" json:"collection"`
 }
 
+type MySqlDB struct {
+	Hostname string `env:"MYSQL_HOSTNAME" envDefault:"mysql" json:"hostname"`
+	Port     int    `env:"MYSQL_PORT" envDefault:"3306" json:"port"`
+	Username string `env:"MYSQL_USERNAME" envDefault:"root" json:"username"`
+	Password string `env:"MYSQL_PASSWORD" envDefault:"root" json:"password"`
+	Database string `env:"MYSQL_DATABASE" envDefault:"transfers-db" json:"database"`
+}
+
+type Memcached struct {
+	Hostname   string `env:"MEMCACHED_HOSTNAME" envDefault:"memcached" json:"hostname"`
+	Port       int    `env:"MEMCACHED_PORT" envDefault:"11211" json:"port"`
+	TTLSeconds int    `env:"MEMCACHED_TTL_SECONDS" envDefault:"30" json:"ttl_seconds"`
+}
+
+type RabbitMQ struct {
+	Hostname  string `env:"RABBITMQ_HOSTNAME" envDefault:"rabbitmq" json:"hostname"`
+	Port      int    `env:"RABBITMQ_PORT" envDefault:"5672" json:"port"`
+	Username  string `env:"RABBITMQ_USERNAME" envDefault:"guest" json:"username"`
+	Password  string `env:"RABBITMQ_PASSWORD" envDefault:"guest" json:"password"`
+	QueueName string `env:"RABBITMQ_QUEUE_NAME" envDefault:"transfers-events" json:"queue_name"`
+}
+
 func ParseFromEnv() *Config {
 	var cfg Config
 	for _, nested := range []interface{}{
 		&cfg.Business,
 		&cfg.MongoDBConfig,
+		&cfg.MySQLDBConfig,
+		&cfg.MemcachedConfig,
+		&cfg.RabbitMQConfig,
 	} {
 		if err := env.Parse(nested); err != nil {
 			logging.Logger.Fatalf("error parsing config: %v", err)

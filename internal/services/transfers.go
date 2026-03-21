@@ -7,6 +7,7 @@ import (
 	"transfers-api/internal/config"
 	"transfers-api/internal/enums"
 	"transfers-api/internal/known_errors"
+	"transfers-api/internal/logging"
 	"transfers-api/internal/models"
 )
 
@@ -21,14 +22,17 @@ type TransfersRepository interface {
 }
 
 type TransfersService struct {
-	businessCfg   config.BusinessConfig
-	transfersRepo TransfersRepository
+	businessCfg    config.BusinessConfig
+	transfersRepo  TransfersRepository
+	transfersCache TransfersRepository
 }
 
-func NewTransfersService(businessCfg config.BusinessConfig, transfersRepo TransfersRepository) *TransfersService {
+func NewTransfersService(businessCfg config.BusinessConfig,
+	transfersRepo TransfersRepository, transfersCache TransfersRepository) *TransfersService {
 	return &TransfersService{
-		businessCfg:   businessCfg,
-		transfersRepo: transfersRepo,
+		businessCfg:    businessCfg,
+		transfersRepo:  transfersRepo,
+		transfersCache: transfersCache,
 	}
 }
 
@@ -52,14 +56,38 @@ func (s *TransfersService) Create(ctx context.Context, transfer models.Transfer)
 	if err != nil {
 		return "", fmt.Errorf("error creating transfer in repository: %w", err)
 	}
+	logging.Logger.Infof("Transfer created in DB with ID: %s", id)
+
+	// also create in cache
+	transfer.ID = id
+	if _, err := s.transfersCache.Create(ctx, transfer); err != nil {
+		logging.Logger.Warnf("error creating transfer in cache: %w", err)
+	}
+	logging.Logger.Infof("Transfer created in cache with ID: %s", id)
+
 	return id, nil
 }
 
 func (s *TransfersService) GetByID(ctx context.Context, id string) (models.Transfer, error) {
-	transfer, err := s.transfersRepo.GetByID(ctx, id)
+	// first try to get from cache
+	transfer, err := s.transfersCache.GetByID(ctx, id)
+	if err == nil {
+		logging.Logger.Infof("Transfer retrieved from cache with ID: %s", id)
+		return transfer, nil
+	}
+
+	transfer, err = s.transfersRepo.GetByID(ctx, id)
 	if err != nil {
 		return models.Transfer{}, fmt.Errorf("error getting transfer %s from repository: %w", id, err)
 	}
+	logging.Logger.Infof("Transfer retrieved from DB with ID: %s", id)
+
+	// also create in cache
+	if _, err := s.transfersCache.Create(ctx, transfer); err != nil {
+		logging.Logger.Warnf("error creating transfer in cache: %w", err)
+	}
+	logging.Logger.Infof("Transfer created in cache with ID: %s", id)
+
 	return transfer, nil
 }
 
@@ -77,6 +105,11 @@ func (s *TransfersService) Update(ctx context.Context, transfer models.Transfer)
 	if err := s.transfersRepo.Update(ctx, transfer); err != nil {
 		return fmt.Errorf("error updating transfer %s in repository: %w", transfer.ID, err)
 	}
+	// also create in cache
+	if _, err := s.transfersCache.Create(ctx, transfer); err != nil {
+		logging.Logger.Warnf("error creating transfer in cache: %w", err)
+	}
+
 	return nil
 }
 
@@ -92,5 +125,10 @@ func (s *TransfersService) ListByUserID(ctx context.Context, id string) ([]model
 	if err != nil {
 		return []models.Transfer{}, fmt.Errorf("error getting user transfers %s from repository: %w", id, err)
 	}
+	// also delete from cache
+	if err := s.transfersCache.Delete(ctx, id); err != nil {
+		logging.Logger.Warnf("error deleting transfer %s from cache: %w", id, err)
+	}
+
 	return transfer, nil
 }
