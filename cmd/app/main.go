@@ -22,7 +22,8 @@ func main() {
 	// init repositories
 	transfersDB := repositories.NewTransfersMongoDBRepository(cfg.MongoDBConfig)
 	//transfersDB := repositories.NewTransfersMySqlDBRepository(cfg.MySQLDBConfig)
-	transfersCache := repositories.NewTransfersMemcachedRepository(cfg.MemcachedConfig)
+	//transfersCache := repositories.NewTransfersMemcachedRepository(cfg.MemcachedConfig)
+	transfersCache := repositories.NewTransfersCcachedRepository(cfg.CcachedConfig)
 	logger.Info("repositories created")
 
 	// init services

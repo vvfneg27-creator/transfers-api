@@ -13,8 +13,8 @@ type Config struct {
 	MongoDBConfig   MongoDB        `json:"mongodb"`
 	MySQLDBConfig   MySqlDB        `json:"mysql"`
 	MemcachedConfig Memcached      `json:"memcached"`
-	//ccachedConfig ccached      `json:"ccached"`
-	RabbitMQConfig RabbitMQ `json:"rabbitmq"`
+	CcachedConfig   Ccached        `json:"ccached"`
+	RabbitMQConfig  RabbitMQ       `json:"rabbitmq"`
 }
 
 type BusinessConfig struct {
@@ -43,6 +43,12 @@ type Memcached struct {
 	Hostname   string `env:"MEMCACHED_HOSTNAME" envDefault:"memcached" json:"hostname"`
 	Port       int    `env:"MEMCACHED_PORT" envDefault:"11211" json:"port"`
 	TTLSeconds int    `env:"MEMCACHED_TTL_SECONDS" envDefault:"30" json:"ttl_seconds"`
+}
+
+type Ccached struct {
+	Hostname   string `env:"CCACHED_HOSTNAME" envDefault:"memcached" json:"hostname"`
+	Port       int    `env:"CCACHED_PORT" envDefault:"11211" json:"port"`
+	TTLSeconds int    `env:"CCACHED_TTL_SECONDS" envDefault:"30" json:"ttl_seconds"`
 }
 
 type RabbitMQ struct {
