@@ -20,19 +20,24 @@ type TransfersRepository interface {
 	Delete(ctx context.Context, id string) error
 	ListByUserID(ctx context.Context, id string) ([]models.Transfer, error)
 }
+type TransfersPublisher interface {
+	Publish(operation string, transferID string) error
+}
 
 type TransfersService struct {
-	businessCfg    config.BusinessConfig
-	transfersRepo  TransfersRepository
-	transfersCache TransfersRepository
+	businessCfg        config.BusinessConfig
+	transfersRepo      TransfersRepository
+	transfersCache     TransfersRepository
+	transfersPublisher TransfersPublisher
 }
 
 func NewTransfersService(businessCfg config.BusinessConfig,
-	transfersRepo TransfersRepository, transfersCache TransfersRepository) *TransfersService {
+	transfersRepo TransfersRepository, transfersCache TransfersRepository, transfersPublisher TransfersPublisher) *TransfersService {
 	return &TransfersService{
-		businessCfg:    businessCfg,
-		transfersRepo:  transfersRepo,
-		transfersCache: transfersCache,
+		businessCfg:        businessCfg,
+		transfersRepo:      transfersRepo,
+		transfersCache:     transfersCache,
+		transfersPublisher: transfersPublisher,
 	}
 }
 
